@@ -10,6 +10,7 @@
 #include <unistd.h>
 
 #include "dump.h"
+#include "utils.h"
 
 struct user_regs_struct {
   unsigned long pc;
@@ -51,8 +52,8 @@ int fuzzy_check_strace;  // set by --fuzzy-strace flag
 static void wait_for_syscall(pid_t child) {
   int status;
   for (;;) {
-    ptrace(PTRACE_SYSCALL, child, 0, 0);
-    waitpid(child, &status, 0);
+    ASSERT(!ptrace(PTRACE_SYSCALL, child, 0, 0));
+    ASSERT(waitpid(child, &status, 0) == child);
     if (WIFSTOPPED(status) && WSTOPSIG(status) & 0x80) return;
     if (WIFEXITED(status)) exit(WEXITSTATUS(status));
   }
@@ -93,14 +94,11 @@ int trace_syscall(const char *checkpoint_dir, pid_t child) {
 
   // wait for the child to stop
   int status;
-  if (waitpid(child, &status, 0) != child) {
-    perror("failed to wait for child");
-    return 1;
-  }
+  ASSERT(waitpid(child, &status, 0) == child);
   if (WIFEXITED(status)) return WEXITSTATUS(status);
 
   // start tracing
-  ptrace(PTRACE_SETOPTIONS, child, 0, PTRACE_O_TRACESYSGOOD);
+  ASSERT(!ptrace(PTRACE_SETOPTIONS, child, 0, PTRACE_O_TRACESYSGOOD));
   for (;;) {
     // wait for the child to enter a system call
     wait_for_syscall(child);
@@ -110,11 +108,7 @@ int trace_syscall(const char *checkpoint_dir, pid_t child) {
     struct iovec iov;
     iov.iov_len = sizeof(regs);
     iov.iov_base = &regs;
-    int ret = ptrace(PTRACE_GETREGSET, child, NT_PRSTATUS, &iov);
-    if (ret < 0) {
-      perror("failed to read registers of child");
-      return 1;
-    }
+    ASSERT(!ptrace(PTRACE_GETREGSET, child, NT_PRSTATUS, &iov));
 
     // check the system call
     if (check_syscall(strace_fd, child, &regs)) {
