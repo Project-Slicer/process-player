@@ -1,8 +1,8 @@
 #ifndef PP_DUMP_H_
 #define PP_DUMP_H_
 
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
 // System call trace record.
 typedef struct {
@@ -86,4 +86,4 @@ typedef struct {
   size_t id;
 } vmap_record_t;
 
-#endif // PP_DUMP_H_
+#endif  // PP_DUMP_H_

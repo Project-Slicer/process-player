@@ -9,4 +9,4 @@ extern int fuzzy_check_strace;
 // Returns the exit code of the process.
 int trace_syscall(const char *checkpoint_dir, pid_t child);
 
-#endif // PP_STRACE_H_
+#endif  // PP_STRACE_H_
