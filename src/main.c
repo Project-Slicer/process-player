@@ -3,6 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "file.h"
 #include "strace.h"
 
 static const char *checkpoint_dir;
@@ -37,6 +38,9 @@ int main(int argc, const char *argv[]) {
   // start the system call tracer
   pid_t child = fork();
   if (child != 0) return trace_syscall(checkpoint_dir, child);
+
+  // restore file descriptors
+  restore_fds(checkpoint_dir);
 
   // TODO
 
