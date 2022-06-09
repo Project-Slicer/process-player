@@ -4,12 +4,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define PP_ASSERT(cond)                                 \
+#define PANIC(fmt, ...)                                 \
   do {                                                  \
-    if (!(cond)) {                                      \
-      fprintf(stderr, "Assertion failed: %s\n", #cond); \
-      abort();                                          \
-    }                                                   \
+    fprintf(stderr, "Panic: " fmt "\n", ##__VA_ARGS__); \
+    abort();                                            \
+  } while (0)
+
+#define ASSERT(cond)                                   \
+  do {                                                 \
+    if (!(cond)) PANIC("Assertion failed: %s", #cond); \
   } while (0)
 
 #endif  // PP_UTILS_H_
