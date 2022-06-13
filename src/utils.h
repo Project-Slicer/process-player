@@ -21,4 +21,8 @@ static inline void read_assert(int fd, void *buf, size_t size) {
   if (nread != size) PANIC("failed to read from fd %d", fd);
 }
 
+static inline void close_assert(int fd) {
+  if (close(fd) < 0) PANIC("failed to close fd %d", fd);
+}
+
 #endif  // PP_UTILS_H_
