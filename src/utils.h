@@ -17,7 +17,13 @@
 
 void utils_init(const char *checkpoint_dir);
 void log_error(const char *fmt, ...);
-int openr_assert(const char *path);
+int openr(const char *path);
+
+static inline int openr_assert(const char *path) {
+  int fd = openr(path);
+  if (fd < 0) PANIC("failed to open %s", path);
+  return fd;
+}
 
 static inline void read_assert(int fd, void *buf, size_t size) {
   size_t nread = read(fd, buf, size);

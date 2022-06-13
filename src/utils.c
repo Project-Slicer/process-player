@@ -38,8 +38,4 @@ void log_error(const char *fmt, ...) {
   fflush(log_file);
 }
 
-int openr_assert(const char *path) {
-  int fd = openat(dirfd, path, O_RDONLY);
-  if (fd < 0) PANIC("failed to open %s", path);
-  return fd;
-}
+int openr(const char *path) { return openat(dirfd, path, O_RDONLY); }
