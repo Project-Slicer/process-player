@@ -5,14 +5,12 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "utils.h"
 #include "dump.h"
+#include "utils.h"
 
 typedef struct {
   int kfd, fd;
 } file_t;
-
-static char kfd_dump_path[sizeof("file/kfd/0123456789")];
 
 static file_t *read_files(uint32_t *length) {
   int obj = openr_assert("file/obj");
@@ -43,18 +41,17 @@ static uint32_t *read_fds(uint32_t *length) {
   return fds;
 }
 
-static const char *get_kfd_dump_path(int kfd) {
-  int ret = snprintf(kfd_dump_path, sizeof(kfd_dump_path), "file/kfd/%d", kfd);
-  ASSERT(ret > 0 && (size_t)ret < sizeof(kfd_dump_path));
-  return kfd_dump_path;
-}
-
 static void restore_fd(file_t *file, int fd) {
   if (file->fd >= 0) {
     ASSERT(dup2(file->fd, fd) == fd);
   } else {
+    // get the path to the kfd dump file
+    char path[sizeof("file/kfd/0123456789")];
+    int ret = snprintf(path, sizeof(path), "file/kfd/%d", file->kfd);
+    ASSERT(ret > 0 && (size_t)ret < sizeof(path));
+
     // open kfd dump file
-    int kfd_dump = openr(get_kfd_dump_path(file->kfd));
+    int kfd_dump = openr(path);
     if (kfd_dump < 0) {
       // must be stdin, stdout, or stderr
       ASSERT(file->kfd >= 0 && file->kfd <= 2);
