@@ -73,7 +73,12 @@ int main(int argc, const char *argv[]) {
   // restore file descriptors
   restore_fds();
 
+  // scan for address space holes
   // TODO
 
-  return 0;
+  // load the post PP and allocate stack
+  // TODO
+
+  // call the post part of PP
+  // TODO: utils_post_init
 }
