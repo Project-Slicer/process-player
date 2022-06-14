@@ -1,12 +1,12 @@
-#include "file.h"
+#include "pre/file.h"
 
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "dump.h"
-#include "utils.h"
+#include "shared/dump.h"
+#include "shared/utils.h"
 
 typedef struct {
   int kfd, fd;

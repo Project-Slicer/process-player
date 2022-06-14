@@ -1,4 +1,4 @@
-#include "strace.h"
+#include "pre/strace.h"
 
 #include <elf.h>
 #include <fcntl.h>
@@ -9,8 +9,8 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include "dump.h"
-#include "utils.h"
+#include "shared/dump.h"
+#include "shared/utils.h"
 
 struct user_regs_struct {
   unsigned long pc;
