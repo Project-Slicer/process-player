@@ -1,4 +1,4 @@
-#include "utils.h"
+#include "shared/utils.h"
 
 #include <fcntl.h>
 #include <stdarg.h>
@@ -8,6 +8,7 @@
 
 static int dirfd, log_fd;
 
+#ifndef PP_POST
 void utils_init(const char *checkpoint_dir) {
   // open the checkpoint directory
   dirfd = open(checkpoint_dir, O_DIRECTORY);
@@ -28,6 +29,12 @@ void utils_init(const char *checkpoint_dir) {
   ASSERT(dup2(STDERR_FILENO, new_stderr) == new_stderr);
   log_fd = new_stderr;
 }
+#else
+void utils_init(int dirfd_, int log_fd_) {
+  dirfd = dirfd_;
+  log_fd = log_fd_;
+}
+#endif
 
 void log_error(const char *fmt, ...) {
   va_list args;
