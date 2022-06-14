@@ -4,11 +4,11 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "dump.h"
-#include "file.h"
-#include "riscv.h"
-#include "strace.h"
-#include "utils.h"
+#include "pre/file.h"
+#include "pre/strace.h"
+#include "shared/dump.h"
+#include "shared/riscv.h"
+#include "shared/utils.h"
 
 static const char *checkpoint_dir;
 
@@ -58,10 +58,6 @@ int main(int argc, const char *argv[]) {
   // parse command line arguments
   parse_args(argc, argv);
 
-  // start the system call tracer
-  pid_t child = fork();
-  if (child != 0) return trace_syscall(checkpoint_dir, child);
-
   // initialize utils
   utils_init(checkpoint_dir);
 
@@ -69,6 +65,10 @@ int main(int argc, const char *argv[]) {
   if (!check_platinfo()) {
     PANIC("invalid checkpoint, platform information mismatch");
   }
+
+  // start the system call tracer
+  pid_t child = fork();
+  if (child != 0) return trace_syscall(checkpoint_dir, child);
 
   // restore file descriptors
   restore_fds();
