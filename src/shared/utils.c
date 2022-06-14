@@ -6,8 +6,7 @@
 #include <sys/resource.h>
 #include <unistd.h>
 
-static int dirfd;
-static FILE *log_file;
+static int dirfd, log_fd;
 
 void utils_init(const char *checkpoint_dir) {
   // open the checkpoint directory
@@ -27,15 +26,14 @@ void utils_init(const char *checkpoint_dir) {
 
   // dup2 to new_stderr
   ASSERT(dup2(STDERR_FILENO, new_stderr) == new_stderr);
-  ASSERT(log_file = fdopen(new_stderr, "w"));
+  log_fd = new_stderr;
 }
 
 void log_error(const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
-  vfprintf(log_file, fmt, args);
+  vdprintf(log_fd, fmt, args);
   va_end(args);
-  fflush(log_file);
 }
 
 int openr(const char *path) { return openat(dirfd, path, O_RDONLY); }
