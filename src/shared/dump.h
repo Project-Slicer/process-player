@@ -1,5 +1,5 @@
-#ifndef PP_DUMP_H_
-#define PP_DUMP_H_
+#ifndef PP_SHARED_DUMP_H_
+#define PP_SHARED_DUMP_H_
 
 #include <stddef.h>
 #include <stdint.h>
@@ -86,4 +86,4 @@ typedef struct {
   size_t id;
 } vmap_record_t;
 
-#endif  // PP_DUMP_H_
+#endif  // PP_SHARED_DUMP_H_
