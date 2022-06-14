@@ -48,6 +48,15 @@ typedef struct {
   uint64_t instret;
 } counter_t;
 
+// Trapframe.
+typedef struct {
+  long gpr[32];
+  long status;
+  long epc;
+  long badvaddr;
+  long cause;
+} trapframe_t;
+
 // Floating point registers.
 typedef struct {
   uint32_t status;
