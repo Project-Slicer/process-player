@@ -29,6 +29,12 @@ void utils_init(const char *checkpoint_dir) {
   ASSERT(dup2(STDERR_FILENO, new_stderr) == new_stderr);
   log_fd = new_stderr;
 }
+
+void utils_post_init(uintptr_t sp, uintptr_t entry) {
+  extern void call_post_pp(int dirfd, int log_fd, uintptr_t sp, uintptr_t entry)
+      __attribute__((noreturn));
+  call_post_pp(dirfd, log_fd, sp, entry);
+}
 #else
 void utils_init(int dirfd_, int log_fd_) {
   dirfd = dirfd_;

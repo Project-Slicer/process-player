@@ -1,6 +1,7 @@
 #ifndef PP_SHARED_UTILS_H_
 #define PP_SHARED_UTILS_H_
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -17,6 +18,7 @@
 
 #ifndef PP_POST
 void utils_init(const char *checkpoint_dir);
+void utils_post_init(uintptr_t sp, uintptr_t entry) __attribute__((noreturn));
 #else
 void utils_init(int dirfd, int log_fd);
 #endif
