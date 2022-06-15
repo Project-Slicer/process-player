@@ -2,6 +2,7 @@
 
 #include <elf.h>
 #include <fcntl.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/ptrace.h>
@@ -54,7 +55,10 @@ static void wait_for_syscall(pid_t child) {
   for (;;) {
     ASSERT(!ptrace(PTRACE_SYSCALL, child, 0, 0));
     ASSERT(waitpid(child, &status, 0) == child);
-    if (WIFSTOPPED(status) && WSTOPSIG(status) & 0x80) return;
+    if (WIFSTOPPED(status)) {
+      if (WSTOPSIG(status) & 0x80) return;
+      raise(WSTOPSIG(status));
+    }
     if (WIFEXITED(status)) exit(WEXITSTATUS(status));
   }
 }
@@ -96,6 +100,7 @@ int trace_syscall(const char *checkpoint_dir, pid_t child) {
   int status;
   ASSERT(waitpid(child, &status, 0) == child);
   if (WIFEXITED(status)) return WEXITSTATUS(status);
+  if (WIFSIGNALED(status)) raise(WTERMSIG(status));
 
   // start tracing
   ASSERT(!ptrace(PTRACE_SETOPTIONS, child, 0, PTRACE_O_TRACESYSGOOD));
