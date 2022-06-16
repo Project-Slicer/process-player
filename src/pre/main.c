@@ -140,12 +140,14 @@ int main(int argc, const char *argv[]) {
   if (child != 0) return trace_syscall(checkpoint_dir, child);
 
   // restore file descriptors
-  restore_fds();
+  int *kfd_list = restore_fds();
 
   // scan for address space holes
   size_t bss_len = (size_t)(*((uint32_t *)&post_pp_end - 1));
-  size_t post_pp_len =
-      ROUNDUP(&post_pp_end - &post_pp_begin + bss_len + POST_PP_STACK_SIZE, 16);
+  size_t kfd_list_len = (kfd_list[0] + 1) * sizeof(int);
+  size_t post_pp_len = ROUNDUP(&post_pp_end - &post_pp_begin + bss_len +
+                                   kfd_list_len + POST_PP_STACK_SIZE,
+                               16);
   char *post_pp_base = get_post_pp_base(post_pp_len);
 
   // load the post PP and initialize
@@ -155,6 +157,9 @@ int main(int argc, const char *argv[]) {
   }
   memcpy(post_pp_base, &post_pp_begin, &post_pp_end - &post_pp_begin);
   memset(post_pp_base + (&post_pp_end - &post_pp_begin), 0, bss_len);
+  memcpy(post_pp_base + (&post_pp_end - &post_pp_begin) + bss_len, kfd_list,
+         kfd_list_len);
+  free(kfd_list);
 
   // call the post part of PP
   uintptr_t post_pp_sp = (uintptr_t)(post_pp_base + post_pp_len);
