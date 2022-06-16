@@ -1,14 +1,6 @@
 #include "shared/riscv.h"
 
   .text
-
-  # Restores the given trapframe and starts the user process.
-  # Arguments:
-  #   - trapframe: address of the trapframe
-  .globl start_process
-start_process:
-  # TODO
-
   # Restores the floating-point registers.
   # Arguments:
   #   - fpregs: address of the `fpregs_t` structure
@@ -49,7 +41,6 @@ restore_fpregs:
   lw    a0, 4(a0)
   csrw  fcsr, a0
   ret
-
 
   .section .bss_len
   .align 2
