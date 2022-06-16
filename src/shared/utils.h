@@ -19,6 +19,8 @@
     if (UNLIKELY(!(cond))) PANIC("Assertion failed: %s", #cond); \
   } while (0)
 
+#define ROUNDUP(a, b) ((((a)-1) / (b) + 1) * (b))
+
 #ifndef PP_POST
 void utils_init(const char *checkpoint_dir);
 void utils_post_init(uintptr_t sp, uintptr_t entry) __attribute__((noreturn));
