@@ -7,8 +7,9 @@
   #   - entry: entry point
   .globl call_post_pp
 call_post_pp:
-  mv   sp, a2
-  jr   a3
+  mv  sp, a2
+  fence.i
+  jr  a3
 
   .data
   .globl post_pp_begin, post_pp_end
