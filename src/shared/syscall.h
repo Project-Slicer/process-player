@@ -1,0 +1,6 @@
+#ifndef PP_SHARED_SYSCALL_H_
+#define PP_SHARED_SYSCALL_H_
+
+#define SYS_START 19980130
+
+#endif  // PP_SHARED_SYSCALL_H_
