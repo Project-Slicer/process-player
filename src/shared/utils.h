@@ -5,15 +5,18 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#define LIKELY(x) __builtin_expect((x), 1)
+#define UNLIKELY(x) __builtin_expect((x), 0)
+
 #define PANIC(fmt, ...)                           \
   do {                                            \
     log_error("Panic: " fmt "\n", ##__VA_ARGS__); \
     abort();                                      \
   } while (0)
 
-#define ASSERT(cond)                                   \
-  do {                                                 \
-    if (!(cond)) PANIC("Assertion failed: %s", #cond); \
+#define ASSERT(cond)                                             \
+  do {                                                           \
+    if (UNLIKELY(!(cond))) PANIC("Assertion failed: %s", #cond); \
   } while (0)
 
 #ifndef PP_POST
