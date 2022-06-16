@@ -1,13 +1,23 @@
+#include <signal.h>
+#include <sys/ptrace.h>
+#include <unistd.h>
+
 #include "post/mem.h"
 #include "shared/dump.h"
+#include "shared/syscall.h"
 #include "shared/utils.h"
 
-// functions defined in `start.S`
+// functions defined in `fpregs.S`
 extern void restore_fpregs(fpregs_t *fpregs);
-extern void start_process(trapframe_t *tf) __attribute__((noreturn));
 
-void __attribute__((section(".text.entry")))
-post_pp_entry(int dirfd, int log_fd) {
+static void pp_start(trapframe_t *tf) __attribute__((noreturn)) {
+  register long a7 asm("a7") = SYS_PP_START;
+  register long a0 asm("a0") = (long)tf;
+  asm volatile("ecall\n\t" : : "r"(a7), "r"(a0) : "memory");
+}
+
+void post_pp_entry(int dirfd, int log_fd)
+    __attribute__((section(".text.entry"))) {
   // initialize utils
   utils_init(dirfd, log_fd);
 
@@ -28,5 +38,6 @@ post_pp_entry(int dirfd, int log_fd) {
   int tf_fd = openr_assert("tf");
   read_assert(tf_fd, &tf, sizeof(tf));
   close_assert(tf_fd);
-  start_process(&tf);
+  ASSERT(!ptrace(PTRACE_TRACEME) && !kill(getpid(), SIGSTOP));
+  pp_start(&tf);
 }
