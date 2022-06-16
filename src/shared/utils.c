@@ -9,6 +9,10 @@
 static int dirfd, log_fd;
 
 #ifndef PP_POST
+// defined in `post.S`
+extern void call_post_pp(int dirfd, int log_fd, uintptr_t sp, uintptr_t entry)
+    __attribute__((noreturn));
+
 void utils_init(const char *checkpoint_dir) {
   // open the checkpoint directory
   dirfd = open(checkpoint_dir, O_DIRECTORY);
@@ -31,8 +35,6 @@ void utils_init(const char *checkpoint_dir) {
 }
 
 void utils_post_init(uintptr_t sp, uintptr_t entry) {
-  extern void call_post_pp(int dirfd, int log_fd, uintptr_t sp, uintptr_t entry)
-      __attribute__((noreturn));
   call_post_pp(dirfd, log_fd, sp, entry);
 }
 #else

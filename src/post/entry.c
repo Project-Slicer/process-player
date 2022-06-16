@@ -7,7 +7,7 @@
 #include "shared/syscall.h"
 #include "shared/utils.h"
 
-// functions defined in `fpregs.S`
+// defined in `fpregs.S`
 extern void restore_fpregs(fpregs_t *fpregs);
 
 static void pp_start(trapframe_t *tf) __attribute__((noreturn)) {
