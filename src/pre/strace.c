@@ -1,6 +1,7 @@
 #include "pre/strace.h"
 
 #include <elf.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <stdio.h>
@@ -11,6 +12,7 @@
 #include <unistd.h>
 
 #include "shared/dump.h"
+#include "shared/syscall.h"
 #include "shared/utils.h"
 
 struct user_regs_struct {
@@ -55,11 +57,11 @@ static void wait_for_syscall(pid_t child) {
   for (;;) {
     ASSERT(!ptrace(PTRACE_SYSCALL, child, 0, 0));
     ASSERT(waitpid(child, &status, 0) == child);
-    if (WIFSTOPPED(status)) {
-      if (WSTOPSIG(status) & 0x80) return;
+    if (LIKELY(WIFSTOPPED(status))) {
+      if (LIKELY(WSTOPSIG(status) & 0x80)) return;
       raise(WSTOPSIG(status));
     }
-    if (WIFEXITED(status)) exit(WEXITSTATUS(status));
+    if (UNLIKELY(WIFEXITED(status))) exit(WEXITSTATUS(status));
   }
 }
 
@@ -86,6 +88,51 @@ static int check_syscall(int strace_fd, pid_t child,
   return 0;
 }
 
+static void restore_trapframe(pid_t child, struct user_regs_struct *regs) {
+  // read trapframe from the child
+  trapframe_t tf;
+  for (size_t i = 0; i < sizeof(tf); i += sizeof(long)) {
+    errno = 0;
+    long val = ptrace(PTRACE_PEEKDATA, child, regs.a0 + i, 0);
+    ASSERT(errno == 0);
+    *((long *)&tf + i / sizeof(long)) = val;
+  }
+
+  // fill regs structure
+  regs->pc = tf.epc;
+  regs->ra = tf.gpr[1];
+  regs->sp = tf.gpr[2];
+  regs->gp = tf.gpr[3];
+  regs->tp = tf.gpr[4];
+  regs->t0 = tf.gpr[5];
+  regs->t1 = tf.gpr[6];
+  regs->t2 = tf.gpr[7];
+  regs->s0 = tf.gpr[8];
+  regs->s1 = tf.gpr[9];
+  regs->a0 = tf.gpr[10];
+  regs->a1 = tf.gpr[11];
+  regs->a2 = tf.gpr[12];
+  regs->a3 = tf.gpr[13];
+  regs->a4 = tf.gpr[14];
+  regs->a5 = tf.gpr[15];
+  regs->a6 = tf.gpr[16];
+  regs->a7 = tf.gpr[17];
+  regs->s2 = tf.gpr[18];
+  regs->s3 = tf.gpr[19];
+  regs->s4 = tf.gpr[20];
+  regs->s5 = tf.gpr[21];
+  regs->s6 = tf.gpr[22];
+  regs->s7 = tf.gpr[23];
+  regs->s8 = tf.gpr[24];
+  regs->s9 = tf.gpr[25];
+  regs->s10 = tf.gpr[26];
+  regs->s11 = tf.gpr[27];
+  regs->t3 = tf.gpr[28];
+  regs->t4 = tf.gpr[29];
+  regs->t5 = tf.gpr[30];
+  regs->t6 = tf.gpr[31];
+}
+
 int trace_syscall(const char *checkpoint_dir, pid_t child) {
   // open the system call trace file
   int dirfd = open(checkpoint_dir, O_DIRECTORY);
@@ -95,6 +142,12 @@ int trace_syscall(const char *checkpoint_dir, pid_t child) {
     return 1;
   }
   close(dirfd);
+
+  // setup regs structure
+  struct user_regs_struct regs;
+  struct iovec iov;
+  iov.iov_len = sizeof(regs);
+  iov.iov_base = &regs;
 
   // wait for the child to stop
   int status;
@@ -109,14 +162,11 @@ int trace_syscall(const char *checkpoint_dir, pid_t child) {
     wait_for_syscall(child);
 
     // read registers
-    struct user_regs_struct regs;
-    struct iovec iov;
-    iov.iov_len = sizeof(regs);
-    iov.iov_base = &regs;
     ASSERT(!ptrace(PTRACE_GETREGSET, child, NT_PRSTATUS, &iov));
 
     // check the system call
-    if (check_syscall(strace_fd, child, &regs)) {
+    if (LIKELY(regs.a7 != SYS_PP_START) &&
+        UNLIKELY(check_syscall(strace_fd, child, &regs))) {
       kill(child, SIGKILL);
       fprintf(stderr, "system call trace mismatch\n");
       return 1;
@@ -124,6 +174,12 @@ int trace_syscall(const char *checkpoint_dir, pid_t child) {
 
     // wait for the child to exit the system call
     wait_for_syscall(child);
+
+    // handle system call `pp_start`
+    if (UNLIKELY(regs.a7 == SYS_PP_START)) {
+      restore_trapframe(child, &regs);
+      ASSERT(!ptrace(PTRACE_SETREGSET, child, NT_PRSTATUS, &iov));
+    }
   }
 
   return 0;
