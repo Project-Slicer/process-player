@@ -18,6 +18,10 @@ static const char *checkpoint_dir;
 #define POST_PP_STACK_SIZE 2048
 extern char post_pp_begin, post_pp_end;
 
+// `Option` type for virtual address
+typedef size_t opt_va_t;
+#define OPT_VA_NONE ((opt_va_t)0)
+
 static void help(const char *progname) {
   printf("Process Player\n\n");
   printf("Usage: %s [OPTIONS] <CHECKPOINT_DIR>\n", progname);
@@ -60,8 +64,63 @@ static bool check_platinfo() {
   return platinfo.major <= PLATINFO_MAJOR && platinfo.minor <= PLATINFO_MINOR;
 }
 
+static opt_va_t read_next_pmap_vaddr(int pmap_fd) {
+  size_t vaddr;
+  ssize_t ret = read(pmap_fd, &vaddr, sizeof(vaddr));
+  if (ret == 0) {
+    return OPT_VA_NONE;
+  } else {
+    ASSERT(ret == sizeof(vaddr));
+    return vaddr & ~0xfff;
+  }
+}
+
+static opt_va_t read_next_vmap_vaddr(int vmap_fd) {
+  size_t vaddr_id[2];
+  ssize_t ret = read(vmap_fd, vaddr_id, sizeof(vaddr_id));
+  if (ret == 0) {
+    return OPT_VA_NONE;
+  } else {
+    ASSERT(ret == sizeof(vaddr_id));
+    return vaddr_id[0];
+  }
+}
+
 static char *get_post_pp_base(size_t len) {
-  // TODO
+  int pmap_fd = openr_assert("mem/pmap");
+  int vmap_fd = openr_assert("mem/vmap");
+
+  opt_va_t last_vaddr = OPT_VA_NONE;
+  opt_va_t pmap_vaddr = read_next_pmap_vaddr(pmap_fd);
+  opt_va_t vmap_vaddr = read_next_vmap_vaddr(vmap_fd);
+  for (;;) {
+    size_t vaddr;
+    if (pmap_vaddr != OPT_VA_NONE && vmap_vaddr != OPT_VA_NONE) {
+      if (pmap_vaddr < vmap_vaddr) {
+        vaddr = pmap_vaddr;
+        pmap_vaddr = read_next_pmap_vaddr(pmap_fd);
+      } else {
+        vaddr = vmap_vaddr;
+        vmap_vaddr = read_next_vmap_vaddr(vmap_fd);
+      }
+    } else if (pmap_vaddr != OPT_VA_NONE) {
+      vaddr = pmap_vaddr;
+      pmap_vaddr = read_next_pmap_vaddr(pmap_fd);
+    } else if (vmap_vaddr != OPT_VA_NONE) {
+      vaddr = vmap_vaddr;
+      vmap_vaddr = read_next_vmap_vaddr(vmap_fd);
+    } else {
+      PANIC("can not find base address of the post PP");
+    }
+
+    if (last_vaddr != OPT_VA_NONE && vaddr >= last_vaddr + RISCV_PGSIZE + len) {
+      close(pmap_fd);
+      close(vmap_fd);
+      return (char *)(last_vaddr + RISCV_PGSIZE);
+    } else {
+      last_vaddr = vaddr;
+    }
+  }
 }
 
 int main(int argc, const char *argv[]) {
