@@ -16,6 +16,9 @@ SECTIONS
     *(.data)
     *(.data*)
     *(.sdata)
+  }
+  . = ALIGN(4);
+  .bss_len : {
     *(.bss_len)
   }
   _bss_start = .;
@@ -23,5 +26,7 @@ SECTIONS
     *(.bss)
     *(.sbss*)
   }
+  . = ALIGN(4);
   _bss_end = .;
+  kfd_list = .;
 }
