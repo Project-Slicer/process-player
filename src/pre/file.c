@@ -41,45 +41,46 @@ static uint32_t *read_fds(uint32_t *length) {
   return fds;
 }
 
+static int open_kfd(int kfd) {
+  // get the path to the kfd dump file
+  char path[sizeof("file/kfd/0123456789")];
+  int ret = snprintf(path, sizeof(path), "file/kfd/%d", kfd);
+  ASSERT(ret > 0 && (size_t)ret < sizeof(path));
+
+  // open kfd dump file
+  int kfd_dump = openr(path);
+  if (kfd_dump < 0) {
+    // must be stdin, stdout, or stderr
+    ASSERT(kfd >= 0 && kfd <= 2);
+  } else {
+    kfd_t data;
+    char kfd_path[128];
+    read_assert(kfd_dump, &data, sizeof(data));
+    read_assert(kfd_dump, kfd_path, data.path_len);
+    close_assert(kfd_dump);
+
+    kfd_path[data.path_len] = '\0';
+    kfd = open(kfd_path, data.flags);
+    ASSERT(kfd >= 0);
+    lseek(kfd, data.offset, SEEK_SET);
+  }
+  return kfd;
+}
+
 static void restore_fd(file_t *file, int fd) {
   if (file->fd >= 0) {
     ASSERT(dup2(file->fd, fd) == fd);
   } else {
-    // get the path to the kfd dump file
-    char path[sizeof("file/kfd/0123456789")];
-    int ret = snprintf(path, sizeof(path), "file/kfd/%d", file->kfd);
-    ASSERT(ret > 0 && (size_t)ret < sizeof(path));
-
-    // open kfd dump file
-    int kfd_dump = openr(path);
-    if (kfd_dump < 0) {
-      // must be stdin, stdout, or stderr
-      ASSERT(file->kfd >= 0 && file->kfd <= 2);
-    } else {
-      kfd_t data;
-      char kfd_path[128];
-      read_assert(kfd_dump, &data, sizeof(data));
-      read_assert(kfd_dump, kfd_path, data.path_len);
-      close_assert(kfd_dump);
-
-      kfd_path[data.path_len] = '\0';
-      file->kfd = open(kfd_path, data.flags);
-      ASSERT(file->kfd >= 0);
-      lseek(file->kfd, data.offset, SEEK_SET);
+    int kfd = open_kfd(file->kfd);
+    if (kfd != fd) {
+      ASSERT(dup2(kfd, fd) == fd);
+      close_assert(kfd);
     }
-
-    // dup2 to fd
-    if (file->kfd != fd) {
-      ASSERT(dup2(file->kfd, fd) == fd);
-      close_assert(file->kfd);
-    }
-
-    // update fd
     file->fd = fd;
   }
 }
 
-void restore_fds() {
+int *restore_fds() {
   // read file objects
   uint32_t files_len;
   file_t *files = read_files(&files_len);
@@ -96,7 +97,26 @@ void restore_fds() {
     restore_fd(&files[index], (int)i);
   }
 
+  // construct kfd list
+  int *kfd_list = malloc((files_len + 1) * sizeof(int));
+  kfd_list[0] = (int)files_len;
+  for (size_t i = 0; i < files_len; i++) {
+    if (files[i].kfd >= 0) {
+      if (files[i].fd < 0) {
+        kfd_list[i + 1] = open_kfd(files[i].kfd);
+      } else {
+        int fd = dup(files[i].fd);
+        ASSERT(fd >= 0);
+        kfd_list[i + 1] = fd;
+      }
+    } else {
+      kfd_list[i + 1] = -1;
+    }
+  }
+
   // free memory
   free(files);
   free(fds);
+
+  return kfd_list;
 }
