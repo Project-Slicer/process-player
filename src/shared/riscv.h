@@ -14,4 +14,9 @@
 #endif
 #endif
 
+// page table entry (PTE) fields
+#define PTE_R 0x002  // Read
+#define PTE_W 0x004  // Write
+#define PTE_X 0x008  // Execute
+
 #endif  // PP_SHARED_RISCV_H_
