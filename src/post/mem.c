@@ -5,6 +5,7 @@
 #include <unistd.h>
 
 #include "post/uncompress.h"
+#include "shared/dump.h"
 #include "shared/riscv.h"
 #include "shared/utils.h"
 
@@ -14,6 +15,10 @@ extern int kfd_list[];
 static int pmap_fd;
 static size_t bytes_written;
 static void *current_page;
+
+#define MAX_VMRS 128
+static vmr_data_t vmrs[MAX_VMRS];
+static size_t vmrs_count;
 
 static void *map_page(size_t vaddr_type) {
   uintptr_t vaddr = vaddr_type & ~(RISCV_PGSIZE - 1);
@@ -26,6 +31,14 @@ static void *map_page(size_t vaddr_type) {
            MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED | MAP_POPULATE, -1, 0);
   PANIC_IF((uintptr_t)page != vaddr, "failed to map page");
   return page;
+}
+
+static void map_vmr(vmap_record_t *record, size_t len) {
+  PANIC_IF(record->id >= vmrs_count, "invalid VMR object index");
+  vmr_data_t *vmr = &vmrs[record->id];
+  void *page = mmap(record->vaddr, len, vmr->prot, MAP_PRIVATE | MAP_FIXED,
+                    vmr->file, vmr->offset);
+  PANIC_IF((uintptr_t)page != record->vaddr, "failed to map VMR object");
 }
 
 static void write_page(uint8_t byte) {
@@ -63,7 +76,53 @@ static void restore_pages() {
   close_assert(page_fd);
 }
 
+static void restore_vmrs() {
+  int vmr_fd = openr_assert("mem/vmr");
+
+  for (vmrs_count = 0;; vmrs_count++) {
+    size_t i = vmrs_count;
+    ssize_t n = read(vmr_fd, &vmrs[i], sizeof(vmr_data_t));
+    PANIC_IF(n < 0, "failed to read VMR object");
+    if (n == 0) break;
+
+    if (vmrs[i].file != -1) {
+      PANIC_IF(vmrs[i].file >= kfd_list[0], "invalid file object index");
+      vmrs[i].file = kfd_list[vmrs[i].file + 1];
+    }
+  }
+
+  close_assert(vmr_fd);
+}
+
+static void restore_vmr_map() {
+  int vmap_fd = openr_assert("mem/vmap");
+
+  vmap_record_t last_record = {.vaddr = 0};
+  size_t last_len = 0;
+  for (;;) {
+    vmap_record_t record;
+    ssize_t n = read(vmap_fd, &record, sizeof(record));
+    PANIC_IF(n < 0, "failed to read VMR mapping");
+    if (n == 0) break;
+
+    if (record.vaddr == last_record.vaddr + last_len &&
+        record.id == last_record.id) {
+      last_len += RISCV_PGSIZE;
+    } else if (last_len > 0) {
+      map_vmr(&last_record, last_len);
+      last_len = 0;
+    } else {
+      last_record = record;
+      last_len = RISCV_PGSIZE;
+    }
+  }
+
+  if (last_len > 0) map_vmr(&last_record, last_len);
+  close_assert(vmap_fd);
+}
+
 void restore_memory() {
   restore_pages();
-  // TODO
+  restore_vmrs();
+  restore_vmr_map();
 }
