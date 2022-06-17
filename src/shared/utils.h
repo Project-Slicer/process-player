@@ -14,10 +14,12 @@
     abort();                                      \
   } while (0)
 
-#define ASSERT(cond)                                             \
-  do {                                                           \
-    if (UNLIKELY(!(cond))) PANIC("Assertion failed: %s", #cond); \
+#define PANIC_IF(cond, fmt, ...)                   \
+  do {                                             \
+    if (UNLIKELY(cond)) PANIC(fmt, ##__VA_ARGS__); \
   } while (0)
+
+#define ASSERT(cond) PANIC_IF(!(cond), "Assertion failed: %s", #cond)
 
 #define ROUNDUP(a, b) ((((a)-1) / (b) + 1) * (b))
 
