@@ -8,7 +8,6 @@
   .globl call_post_pp
 call_post_pp:
   mv  sp, a2
-  fence.i
   jr  a3
 
   .data
