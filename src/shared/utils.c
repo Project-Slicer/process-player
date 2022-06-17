@@ -6,7 +6,7 @@
 #include <sys/resource.h>
 #include <unistd.h>
 
-static int dirfd, log_fd;
+static int dirfd, log_fd = STDERR_FILENO;
 
 #ifndef PP_POST
 // defined in `post.S`
@@ -16,7 +16,7 @@ extern void call_post_pp(int dirfd, int log_fd, uintptr_t sp, uintptr_t entry)
 void utils_init(const char *checkpoint_dir) {
   // open the checkpoint directory
   dirfd = open(checkpoint_dir, O_DIRECTORY);
-  ASSERT(dirfd >= 0);
+  PANIC_IF(dirfd < 0, "failed to open checkpoint directory %s", checkpoint_dir);
 
   // get the maximum number of open files
   struct rlimit rlim;
