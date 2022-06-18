@@ -1,5 +1,5 @@
 # external parameters
-DEBUG ?= 0
+export DEBUG ?= 0
 OPT_LEVEL ?= 3
 
 # check if is debug mode
@@ -15,7 +15,7 @@ endif
 CROSS_PREFIX := riscv64-unknown-linux-gnu-
 
 # cross C compiler
-CFLAGS := -Wall -Werror -std=c11 -c -MMD -MP $(C_DEBUG_ARG) $(C_OPT_ARG)
+CFLAGS := -Wall -Werror -std=gnu11 -c -MMD -MP $(C_DEBUG_ARG) $(C_OPT_ARG)
 export CC := $(CROSS_PREFIX)gcc $(CFLAGS)
 CFLAGS :=
 
