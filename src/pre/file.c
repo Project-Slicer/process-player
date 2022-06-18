@@ -61,7 +61,7 @@ static int open_kfd(int kfd) {
     close_assert(kfd_dump);
 
     kfd_path[data.path_len] = '\0';
-    kfd = open(kfd_path, data.flags);
+    kfd = openat_dir(kfd_path, data.flags);
     PANIC_IF(kfd < 0, "failed to open kfd %s", kfd_path);
     lseek(kfd, data.offset, SEEK_SET);
   }
