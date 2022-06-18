@@ -27,7 +27,7 @@ static void *map_page(size_t vaddr_type) {
   if (vaddr_type & PTE_W) prot |= PROT_WRITE;
   if (vaddr_type & PTE_X) prot |= PROT_EXEC;
   void *page =
-      mmap(vaddr, RISCV_PGSIZE, prot,
+      mmap((void *)vaddr, RISCV_PGSIZE, prot,
            MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED | MAP_POPULATE, -1, 0);
   PANIC_IF((uintptr_t)page != vaddr, "failed to map page");
   return page;
@@ -36,8 +36,9 @@ static void *map_page(size_t vaddr_type) {
 static void map_vmr(vmap_record_t *record, size_t len) {
   PANIC_IF(record->id >= vmrs_count, "invalid VMR object index");
   vmr_data_t *vmr = &vmrs[record->id];
-  void *page = mmap(record->vaddr, len, vmr->prot, MAP_PRIVATE | MAP_FIXED,
-                    vmr->file, record->vaddr - vmr->addr + vmr->offset);
+  void *page =
+      mmap((void *)record->vaddr, len, vmr->prot, MAP_PRIVATE | MAP_FIXED,
+           vmr->file, record->vaddr - vmr->addr + vmr->offset);
   PANIC_IF((uintptr_t)page != record->vaddr, "failed to map VMR object");
 }
 

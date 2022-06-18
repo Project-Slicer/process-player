@@ -93,7 +93,7 @@ static void restore_trapframe(pid_t child, struct user_regs_struct *regs) {
   trapframe_t tf;
   for (size_t i = 0; i < sizeof(tf); i += sizeof(long)) {
     errno = 0;
-    long val = ptrace(PTRACE_PEEKDATA, child, regs.a0 + i, 0);
+    long val = ptrace(PTRACE_PEEKDATA, child, regs->a0 + i, 0);
     ASSERT(errno == 0);
     *((long *)&tf + i / sizeof(long)) = val;
   }
