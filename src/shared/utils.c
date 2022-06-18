@@ -10,8 +10,8 @@ static int dirfd, log_fd = STDERR_FILENO;
 
 #ifndef PP_POST
 // defined in `post.S`
-extern void call_post_pp(int dirfd, int log_fd, uintptr_t sp, uintptr_t entry)
-    __attribute__((noreturn));
+extern void __attribute__((noreturn))
+call_post_pp(int dirfd, int log_fd, uintptr_t sp, uintptr_t entry);
 
 void utils_init(const char *checkpoint_dir) {
   // open the checkpoint directory

@@ -10,14 +10,15 @@
 // defined in `fpregs.S`
 extern void restore_fpregs(fpregs_t *fpregs);
 
-static void pp_start(trapframe_t *tf) __attribute__((noreturn)) {
-  register long a7 asm("a7") = SYS_PP_START;
-  register long a0 asm("a0") = (long)tf;
-  asm volatile("ecall\n\t" : : "r"(a7), "r"(a0) : "memory");
+static void __attribute__((noreturn)) pp_start(trapframe_t *tf) {
+  register long a7 __asm__("a7") = SYS_PP_START;
+  register long a0 __asm__("a0") = (long)tf;
+  __asm__ volatile("ecall\n\t" : : "r"(a7), "r"(a0) : "memory");
+  __builtin_unreachable();
 }
 
-void post_pp_entry(int dirfd, int log_fd)
-    __attribute__((section(".text.entry"))) {
+void __attribute__((section(".text.entry")))
+post_pp_entry(int dirfd, int log_fd) {
   // initialize utils
   utils_init(dirfd, log_fd);
 
