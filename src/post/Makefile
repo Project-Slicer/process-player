@@ -2,7 +2,7 @@
 CUR_DIR := $(shell pwd)
 
 # Flags
-CFLAGS := -I$(CUR_DIR) -I$(SRC_DIR)/shared -DPP_POST -fPIC
+CFLAGS := -I$(SRC_DIR) -DPP_POST -fPIC
 ASFLAGS := $(CFLAGS)
 
 # Files
@@ -12,12 +12,17 @@ OBJS := $(patsubst $(OBJ_DIR)/src/shared/%, $(OBJ_DIR)/src/post/%, $(OBJS))
 LINKER_SCRIPT := $(CUR_DIR)/post.ld
 
 
-.SILENT:
-
 $(POST_PP): $(OBJS) $(LINKER_SCRIPT)
 	$(info LD   $(basename $@))
-	$(LD) -T$(LINKER_SCRIPT) -o $(basename $@) $(OBJS)
+	$(LD) -nostartfiles -T$(LINKER_SCRIPT) -o $(basename $@) $(OBJS)
+	$(info OBJD $(basename $@))
+	$(OBJD) $(basename $@) > $(basename $@).dump
 	$(info OBJC $@)
 	$(OBJC) -j .text -j .rodata -j .data -j .bss_len $(basename $@) $@
+
+$(OBJ_DIR)/src/post/utils.c.o: $(SRC_DIR)/shared/utils.c
+	$(info CC   $@)
+	-mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -o $@ $<
 
 $(call inc_rules_deps, $(OBJS))

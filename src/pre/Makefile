@@ -2,7 +2,7 @@
 CUR_DIR := $(shell pwd)
 
 # Flags
-CFLAGS := -I$(CUR_DIR) -I$(SRC_DIR)/shared -I$(BUILD_DIR)
+CFLAGS := -I$(SRC_DIR) -I$(BUILD_DIR)
 ASFLAGS := $(CFLAGS)
 
 # Files
@@ -11,10 +11,16 @@ $(call make_obj, OBJS, $(SRCS))
 OBJS := $(patsubst $(OBJ_DIR)/src/shared/%, $(OBJ_DIR)/src/pre/%, $(OBJS))
 
 
-.SILENT:
-
 $(PP): $(OBJS)
 	$(info LD   $@)
 	$(LD) -o $@ $(OBJS)
+	$(info OBJD $@)
+	$(OBJD) $@ > $@.dump
+	$(if $(filter 0, $(DEBUG)), $(STRIP) $@ -o $@)
+
+$(OBJ_DIR)/src/pre/utils.c.o: $(SRC_DIR)/shared/utils.c
+	$(info CC   $@)
+	-mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -o $@ $<
 
 $(call inc_rules_deps, $(OBJS))
