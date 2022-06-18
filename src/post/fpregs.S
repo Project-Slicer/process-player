@@ -2,7 +2,7 @@
 
   .text
   # Restores the floating-point registers.
-  # Arguments:
+  # Parameters:
   #   - fpregs: address of the `fpregs_t` structure
   .globl restore_fpregs
 restore_fpregs:

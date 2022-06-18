@@ -1,6 +1,6 @@
   .text
   # Calls the post part of the Process Player
-  # Arguments:
+  # Parameters:
   #   - dirfd: The file descriptor of the checkpoint directory
   #   - log_fd: The file descriptor of the log file (stderr)
   #   - sp: stack pointer
