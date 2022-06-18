@@ -1,6 +1,7 @@
 #ifndef PP_SHARED_UTILS_H_
 #define PP_SHARED_UTILS_H_
 
+#include <fcntl.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -31,11 +32,13 @@ void utils_init(int dirfd, int log_fd);
 #endif
 
 void log_error(const char *fmt, ...);
-int openr(const char *path);
+int openat_dir(const char *path, int flags);
+
+static inline int openr(const char *path) { return openat_dir(path, O_RDONLY); }
 
 static inline int openr_assert(const char *path) {
   int fd = openr(path);
-  PANIC_IF(fd < 0, "Failed to open %s", path);
+  PANIC_IF(fd < 0, "failed to open %s", path);
   return fd;
 }
 

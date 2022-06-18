@@ -51,4 +51,6 @@ void log_error(const char *fmt, ...) {
   va_end(args);
 }
 
-int openr(const char *path) { return openat(dirfd, path, O_RDONLY); }
+int openat_dir(const char *path, int flags) {
+  return openat(dirfd, path, flags);
+}
