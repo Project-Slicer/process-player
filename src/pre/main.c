@@ -143,11 +143,11 @@ int main(int argc, const char *argv[]) {
   int *kfd_list = restore_fds();
 
   // scan for address space holes
-  size_t bss_len = (size_t)(*((uint32_t *)&post_pp_end - 1));
+  size_t post_pp_len = &post_pp_end - &post_pp_begin;
+  size_t bss_len = (size_t)(*(uint32_t *)(&post_pp_begin + post_pp_len - 4));
   size_t kfd_list_len = (kfd_list[0] + 1) * sizeof(int);
-  size_t post_pp_len = ROUNDUP(&post_pp_end - &post_pp_begin + bss_len +
-                                   kfd_list_len + POST_PP_STACK_SIZE,
-                               16);
+  post_pp_len =
+      ROUNDUP(post_pp_len + bss_len + kfd_list_len + POST_PP_STACK_SIZE, 16);
   char *post_pp_base = get_post_pp_base(post_pp_len);
 
   // load the post PP and initialize
