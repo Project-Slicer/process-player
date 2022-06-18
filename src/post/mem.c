@@ -37,7 +37,7 @@ static void map_vmr(vmap_record_t *record, size_t len) {
   PANIC_IF(record->id >= vmrs_count, "invalid VMR object index");
   vmr_data_t *vmr = &vmrs[record->id];
   void *page = mmap(record->vaddr, len, vmr->prot, MAP_PRIVATE | MAP_FIXED,
-                    vmr->file, vmr->offset);
+                    vmr->file, record->vaddr - vmr->addr + vmr->offset);
   PANIC_IF((uintptr_t)page != record->vaddr, "failed to map VMR object");
 }
 
