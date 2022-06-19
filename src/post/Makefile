@@ -18,6 +18,6 @@ $(POST_PP): $(OBJS) $(LINKER_SCRIPT)
 	$(info OBJD $(basename $@))
 	$(OBJD) $(basename $@) > $(basename $@).dump
 	$(info OBJC $@)
-	$(OBJC) -j .text -j .rodata -j .data -j .bss_len $(basename $@) $@
+	$(OBJC) -j .text -j .rodata -j .data $(basename $@) $@
 
 $(call inc_rules_deps, $(OBJS))

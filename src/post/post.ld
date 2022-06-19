@@ -16,9 +16,7 @@ SECTIONS
     *(.data)
     *(.data*)
     *(.sdata)
-  }
-  . = ALIGN(4);
-  .bss_len : {
+    . = ALIGN(4);
     *(.bss_len)
   }
   _bss_start = .;
