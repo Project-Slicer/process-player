@@ -1,9 +1,8 @@
 #include "post/mem.h"
 
 #include <stdint.h>
-#include <sys/mman.h>
-#include <unistd.h>
 
+#include "post/tinylibc.h"
 #include "post/uncompress.h"
 #include "shared/dump.h"
 #include "shared/riscv.h"

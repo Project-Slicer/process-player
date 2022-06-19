@@ -1,7 +1,8 @@
 #include "post/uncompress.h"
 
 #include <stddef.h>
-#include <unistd.h>
+
+#include "post/tinylibc.h"
 
 #define COMPRESS_QUEUE_LEN 255
 static uint8_t compress_queue[COMPRESS_QUEUE_LEN];
