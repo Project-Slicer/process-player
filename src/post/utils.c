@@ -4,7 +4,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-static int dirfd, log_fd = STDERR_FILENO;
+static int dirfd, log_fd;
 
 void utils_init(int dirfd_, int log_fd_) {
   dirfd = dirfd_;
