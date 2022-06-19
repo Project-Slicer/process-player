@@ -17,6 +17,6 @@ $(PP): $(OBJS)
 	$(OBJD) $@ > $@.dump
 	$(if $(filter 0, $(DEBUG)), $(STRIP) $@ -o $@)
 
-$(CUR_DIR)/post.S: $(POST_PP)
+$(OBJ_DIR)/src/pre/post.S.o: $(CUR_DIR)/post.S $(POST_PP)
 
 $(call inc_rules_deps, $(OBJS))
