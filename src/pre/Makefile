@@ -6,9 +6,8 @@ CFLAGS := -I$(SRC_DIR) -I$(BUILD_DIR)
 ASFLAGS := $(CFLAGS)
 
 # Files
-SRCS := $(call scan_src, $(CUR_DIR)) $(call scan_src, $(SRC_DIR)/shared)
+SRCS := $(call scan_src, $(CUR_DIR))
 $(call make_obj, OBJS, $(SRCS))
-OBJS := $(patsubst $(OBJ_DIR)/src/shared/%, $(OBJ_DIR)/src/pre/%, $(OBJS))
 
 
 $(PP): $(OBJS)
@@ -18,11 +17,6 @@ $(PP): $(OBJS)
 	$(OBJD) $@ > $@.dump
 	$(if $(filter 0, $(DEBUG)), $(STRIP) $@ -o $@)
 
-$(OBJ_DIR)/src/pre/utils.c.o: $(SRC_DIR)/shared/utils.c
-	$(info CC   $@)
-	-mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -o $@ $<
-
-$(OBJ_DIR)/src/pre/post.S.o: $(CUR_DIR)/post.S $(POST_PP)
+$(CUR_DIR)/post.S: $(POST_PP)
 
 $(call inc_rules_deps, $(OBJS))
