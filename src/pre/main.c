@@ -90,6 +90,7 @@ static char *get_post_pp_base(size_t len) {
   int pmap_fd = openr_assert("mem/pmap");
   int vmap_fd = openr_assert("mem/vmap");
 
+  const size_t cur_brk = (size_t)sbrk(0);
   opt_va_t last_vaddr = OPT_VA_NONE;
   opt_va_t pmap_vaddr = read_next_pmap_vaddr(pmap_fd);
   opt_va_t vmap_vaddr = read_next_vmap_vaddr(vmap_fd);
@@ -113,7 +114,8 @@ static char *get_post_pp_base(size_t len) {
       PANIC("can not find base address of the post PP");
     }
 
-    if (last_vaddr != OPT_VA_NONE && vaddr >= last_vaddr + RISCV_PGSIZE + len) {
+    if (last_vaddr != OPT_VA_NONE && vaddr > cur_brk &&
+        vaddr >= last_vaddr + RISCV_PGSIZE + len) {
       close(pmap_fd);
       close(vmap_fd);
       return (char *)(last_vaddr + RISCV_PGSIZE);
