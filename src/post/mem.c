@@ -123,16 +123,14 @@ static void restore_vmr_map() {
     if (record.vaddr == last_record.vaddr + last_len &&
         record.id == last_record.id) {
       last_len += RISCV_PGSIZE;
-    } else if (last_len > 0) {
-      map_vmr(&last_record, last_len);
-      last_len = 0;
     } else {
+      if (last_len) map_vmr(&last_record, last_len);
       last_record = record;
       last_len = RISCV_PGSIZE;
     }
   }
+  if (last_len) map_vmr(&last_record, last_len);
 
-  if (last_len > 0) map_vmr(&last_record, last_len);
   close_assert(vmap_fd);
 }
 
