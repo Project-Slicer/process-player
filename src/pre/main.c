@@ -137,6 +137,7 @@ int main(int argc, const char *argv[]) {
 
   // start the system call tracer
   pid_t child = fork();
+  PANIC_IF(child < 0, "failed to create child process");
   if (child != 0) return trace_syscall(checkpoint_dir, child);
 
   // restore file descriptors
@@ -149,6 +150,7 @@ int main(int argc, const char *argv[]) {
   post_pp_len =
       ROUNDUP(post_pp_len + bss_len + kfd_list_len + POST_PP_STACK_SIZE, 16);
   char *post_pp_base = get_post_pp_base(post_pp_len);
+  DBG("post_pp_len = %d, post_pp_base = %p", (int)post_pp_len, post_pp_base);
 
   // load the post PP and initialize
   if (mmap(post_pp_base, post_pp_len, PROT_READ | PROT_WRITE | PROT_EXEC,
@@ -163,5 +165,6 @@ int main(int argc, const char *argv[]) {
 
   // call the post part of PP
   uintptr_t post_pp_sp = (uintptr_t)(post_pp_base + post_pp_len);
+  DBG("calling the post PP...");
   utils_post_init(post_pp_sp, (uintptr_t)post_pp_base);
 }

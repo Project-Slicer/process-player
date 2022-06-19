@@ -19,10 +19,13 @@ static void __attribute__((noreturn)) pp_start(trapframe_t *tf) {
 
 void __attribute__((section(".text.entry")))
 post_pp_entry(int dirfd, int log_fd) {
+  DBG("post PP entry, dirfd = %d, log_fd = %d", dirfd, log_fd);
+
   // initialize utils
   utils_init(dirfd, log_fd);
 
   // restore memory
+  DBG("restoring memory...");
   restore_memory();
 
   // restore floating point registers
@@ -39,6 +42,7 @@ post_pp_entry(int dirfd, int log_fd) {
   int tf_fd = openr_assert("tf");
   read_assert(tf_fd, &tf, sizeof(tf));
   close_assert(tf_fd);
+  DBG("restoring trapframe...");
   ASSERT(!ptrace(PTRACE_TRACEME) && !kill(getpid(), SIGSTOP));
   pp_start(&tf);
 }
