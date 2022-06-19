@@ -138,7 +138,7 @@ int main(int argc, const char *argv[]) {
   // start the system call tracer
   pid_t child = fork();
   PANIC_IF(child < 0, "failed to create child process");
-  if (child != 0) return trace_syscall(checkpoint_dir, child);
+  if (child != 0) return trace_syscall(child);
 
   // restore file descriptors
   int *kfd_list = restore_fds();
