@@ -15,10 +15,11 @@
 #define UNLIKELY(x) __builtin_expect((x), 0)
 #define ROUNDUP(a, b) ((((a)-1) / (b) + 1) * (b))
 
-#define PANIC(fmt, ...)                           \
-  do {                                            \
-    log_error("Panic: " fmt "\n", ##__VA_ARGS__); \
-    abort();                                      \
+#define PANIC(fmt, ...)                                                     \
+  do {                                                                      \
+    log_error("Panic(%s @ %s:%d): " fmt "\n", __func__, __FILE__, __LINE__, \
+              ##__VA_ARGS__);                                               \
+    abort();                                                                \
   } while (0)
 
 #define PANIC_IF(cond, fmt, ...)                   \
@@ -33,9 +34,10 @@
   do {                \
   } while (0)
 #else
-#define DBG(fmt, ...)                             \
-  do {                                            \
-    log_error("Debug: " fmt "\n", ##__VA_ARGS__); \
+#define DBG(fmt, ...)                                                       \
+  do {                                                                      \
+    log_error("Debug(%s @ %s:%d): " fmt "\n", __func__, __FILE__, __LINE__, \
+              ##__VA_ARGS__);                                               \
   } while (0)
 #endif
 
