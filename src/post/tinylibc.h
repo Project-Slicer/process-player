@@ -132,6 +132,7 @@ static inline void *mmap(void *addr, size_t length, int prot, int flags, int fd,
 
 static inline void __attribute__((noreturn)) abort() {
   kill(getpid(), SIGABRT);
+  __builtin_unreachable();
 }
 
 int vdprintf(int fd, const char *fmt, va_list ap);
