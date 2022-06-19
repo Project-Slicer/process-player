@@ -4,7 +4,6 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <sys/ptrace.h>
 #include <sys/uio.h>
@@ -71,10 +70,13 @@ static int check_syscall(int strace_fd, pid_t child,
   ssize_t len = read(strace_fd, &strace, sizeof(strace));
   if (len == 0) {
     kill(child, SIGKILL);
-    return 0;
+    exit(0);
   } else if (len != sizeof(strace)) {
     return 1;
   } else {
+    DBG("strace:");
+    DBG("  actual   num = %d, pc = %p", (int)regs->a7, regs->pc - 4);
+    DBG("  expected num = %d, pc = %p", (int)strace.args[6], strace.epc);
     if (!fuzzy_check_strace) {
       if (strace.args[0] != regs->a0) return 1;
       if (strace.args[1] != regs->a1) return 1;
@@ -83,7 +85,7 @@ static int check_syscall(int strace_fd, pid_t child,
       if (strace.args[4] != regs->a4) return 1;
       if (strace.args[5] != regs->a5) return 1;
     }
-    if (strace.args[6] != regs->a7 || strace.epc != regs->pc) return 1;
+    if (strace.args[6] != regs->a7 || strace.epc != regs->pc - 4) return 1;
   }
   return 0;
 }
@@ -133,15 +135,9 @@ static void restore_trapframe(pid_t child, struct user_regs_struct *regs) {
   regs->t6 = tf.gpr[31];
 }
 
-int trace_syscall(const char *checkpoint_dir, pid_t child) {
+int trace_syscall(pid_t child) {
   // open the system call trace file
-  int dirfd = open(checkpoint_dir, O_DIRECTORY);
-  int strace_fd = openat(dirfd, "strace", O_RDONLY);
-  if (strace_fd < 0) {
-    perror("failed to open strace file");
-    return 1;
-  }
-  close(dirfd);
+  int strace_fd = openr_assert("strace");
 
   // setup regs structure
   struct user_regs_struct regs;
@@ -168,7 +164,7 @@ int trace_syscall(const char *checkpoint_dir, pid_t child) {
     if (LIKELY(regs.a7 != SYS_PP_START) &&
         UNLIKELY(check_syscall(strace_fd, child, &regs))) {
       kill(child, SIGKILL);
-      fprintf(stderr, "system call trace mismatch\n");
+      log_error("system call trace mismatch\n");
       return 1;
     }
 
@@ -179,6 +175,7 @@ int trace_syscall(const char *checkpoint_dir, pid_t child) {
     if (UNLIKELY(regs.a7 == SYS_PP_START)) {
       restore_trapframe(child, &regs);
       ASSERT(!ptrace(PTRACE_SETREGSET, child, NT_PRSTATUS, &iov));
+      DBG("process started");
     }
   }
 
