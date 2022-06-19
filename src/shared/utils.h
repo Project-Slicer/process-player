@@ -8,6 +8,7 @@
 
 #define LIKELY(x) __builtin_expect((x), 1)
 #define UNLIKELY(x) __builtin_expect((x), 0)
+#define ROUNDUP(a, b) ((((a)-1) / (b) + 1) * (b))
 
 #define PANIC(fmt, ...)                           \
   do {                                            \
@@ -22,7 +23,16 @@
 
 #define ASSERT(cond) PANIC_IF(!(cond), "Assertion failed: %s", #cond)
 
-#define ROUNDUP(a, b) ((((a)-1) / (b) + 1) * (b))
+#ifdef NDEBUG
+#define DBG(fmt, ...) \
+  do {                \
+  } while (0)
+#else
+#define DBG(fmt, ...)                             \
+  do {                                            \
+    log_error("Debug: " fmt "\n", ##__VA_ARGS__); \
+  } while (0)
+#endif
 
 #ifndef PP_POST
 void utils_init(const char *checkpoint_dir);
