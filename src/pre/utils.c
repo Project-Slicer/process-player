@@ -8,7 +8,6 @@
 
 static int dirfd, log_fd = STDERR_FILENO;
 
-#ifndef PP_POST
 // defined in `post.S`
 extern void __attribute__((noreturn))
 call_post_pp(int dirfd, int log_fd, uintptr_t sp, uintptr_t entry);
@@ -37,12 +36,6 @@ void utils_init(const char *checkpoint_dir) {
 void utils_post_init(uintptr_t sp, uintptr_t entry) {
   call_post_pp(dirfd, log_fd, sp, entry);
 }
-#else
-void utils_init(int dirfd_, int log_fd_) {
-  dirfd = dirfd_;
-  log_fd = log_fd_;
-}
-#endif
 
 void log_error(const char *fmt, ...) {
   va_list args;
