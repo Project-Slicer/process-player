@@ -8,9 +8,6 @@
 #include "shared/riscv.h"
 #include "shared/utils.h"
 
-// kernel file descriptor list
-extern int kfd_list[];
-
 static int pmap_fd;
 static size_t bytes_written;
 static void *current_page;
@@ -19,12 +16,18 @@ static void *current_page;
 static vmr_data_t vmrs[MAX_VMRS];
 static size_t vmrs_count;
 
+static inline int *get_kfd_list() {
+  int *kfds;
+  asm volatile("lla %0, kfd_list\n\t" : "=r"(kfds));
+  return kfds;
+}
+
 static void *map_page(size_t vaddr_type) {
   uintptr_t vaddr = vaddr_type & ~(RISCV_PGSIZE - 1);
-  int prot = 0;
+  int prot = PROT_WRITE;
   if (vaddr_type & PTE_R) prot |= PROT_READ;
-  if (vaddr_type & PTE_W) prot |= PROT_WRITE;
   if (vaddr_type & PTE_X) prot |= PROT_EXEC;
+
   void *page =
       mmap((void *)vaddr, RISCV_PGSIZE, prot,
            MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED | MAP_POPULATE, -1, 0);
@@ -36,10 +39,14 @@ static void *map_page(size_t vaddr_type) {
 static void map_vmr(vmap_record_t *record, size_t len) {
   PANIC_IF(record->id >= vmrs_count, "invalid VMR object index");
   vmr_data_t *vmr = &vmrs[record->id];
-  void *page =
-      mmap((void *)record->vaddr, len, vmr->prot, MAP_PRIVATE | MAP_FIXED,
-           vmr->file, record->vaddr - vmr->addr + vmr->offset);
+
+  int flags = MAP_PRIVATE | MAP_FIXED;
+  if (vmr->file == -1) flags |= MAP_ANONYMOUS;
+
+  void *page = mmap((void *)record->vaddr, len, vmr->prot, flags, vmr->file,
+                    record->vaddr - vmr->addr + vmr->offset);
   PANIC_IF((uintptr_t)page != record->vaddr, "failed to map VMR object");
+  DBG("mapped VMR %d at %p, len = %d", record->id, page, (int)len);
 }
 
 static void write_page(uint8_t byte) {
@@ -74,7 +81,7 @@ static void restore_pages() {
            sizeof(vaddr_type)) {
       void *page = map_page(vaddr_type);
       read_assert(page_fd, page, RISCV_PGSIZE);
-      DBG("page mapped at %p", page);
+      DBG("restored page at %p", page);
     }
     PANIC_IF(n != 0, "failed to read physical memory map");
   }
@@ -85,6 +92,7 @@ static void restore_pages() {
 
 static void restore_vmrs() {
   int vmr_fd = openr_assert("mem/vmr");
+  int *kfds = get_kfd_list();
 
   for (vmrs_count = 0;; vmrs_count++) {
     size_t i = vmrs_count;
@@ -93,8 +101,8 @@ static void restore_vmrs() {
     if (n == 0) break;
 
     if (vmrs[i].file != -1) {
-      PANIC_IF(vmrs[i].file >= kfd_list[0], "invalid file object index");
-      vmrs[i].file = kfd_list[vmrs[i].file + 1];
+      PANIC_IF(vmrs[i].file >= kfds[0], "invalid file object index");
+      vmrs[i].file = kfds[vmrs[i].file + 1];
     }
   }
 
@@ -135,4 +143,10 @@ void restore_memory() {
   restore_vmrs();
   DBG("restoring VMR mapping...");
   restore_vmr_map();
+
+  // close kernel file descriptors
+  int *kfds = get_kfd_list();
+  for (int i = 1; i <= kfds[0]; i++) {
+    if (kfds[i] >= 0) close_assert(kfds[i]);
+  }
 }
