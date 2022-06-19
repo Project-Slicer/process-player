@@ -1,8 +1,8 @@
 #include "shared/utils.h"
 
-#include <fcntl.h>
 #include <stdarg.h>
-#include <stdio.h>
+
+#include "post/tinylibc.h"
 
 static int dirfd, log_fd;
 

@@ -1,10 +1,15 @@
 #ifndef PP_SHARED_UTILS_H_
 #define PP_SHARED_UTILS_H_
 
-#include <fcntl.h>
 #include <stdint.h>
+
+#ifndef PP_POST
+#include <fcntl.h>
 #include <stdlib.h>
 #include <unistd.h>
+#else
+#include "post/tinylibc.h"
+#endif
 
 #define LIKELY(x) __builtin_expect((x), 1)
 #define UNLIKELY(x) __builtin_expect((x), 0)
