@@ -29,6 +29,7 @@ static void *map_page(size_t vaddr_type) {
       mmap((void *)vaddr, RISCV_PGSIZE, prot,
            MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED | MAP_POPULATE, -1, 0);
   PANIC_IF((uintptr_t)page != vaddr, "failed to map page");
+  DBG("mapped page %p", page);
   return page;
 }
 
@@ -48,16 +49,21 @@ static void write_page(uint8_t byte) {
     current_page = map_page(vaddr_type);
   }
   ((uint8_t *)current_page)[bytes_written++] = byte;
-  if (bytes_written == RISCV_PGSIZE) bytes_written = 0;
+  if (bytes_written == RISCV_PGSIZE) {
+    DBG("wrote page at %p", current_page);
+    bytes_written = 0;
+  }
 }
 
 static void restore_pages() {
   pmap_fd = openr_assert("mem/pmap");
   int page_fd = openr_assert("mem/page");
+  DBG("pmap_fd = %d, page_fd = %d", pmap_fd, page_fd);
 
   // check if the page dump was compressed
   uint8_t compressed;
   read_assert(page_fd, &compressed, sizeof(compressed));
+  DBG("compressed = %d", (int)compressed);
   if (compressed) {
     bytes_written = 0;
     PANIC_IF(uncompress(page_fd, write_page), "failed to uncompress page dump");
@@ -68,6 +74,7 @@ static void restore_pages() {
            sizeof(vaddr_type)) {
       void *page = map_page(vaddr_type);
       read_assert(page_fd, page, RISCV_PGSIZE);
+      DBG("page mapped at %p", page);
     }
     PANIC_IF(n != 0, "failed to read physical memory map");
   }
@@ -122,7 +129,10 @@ static void restore_vmr_map() {
 }
 
 void restore_memory() {
+  DBG("restoring pages...");
   restore_pages();
+  DBG("restoring VMRs...");
   restore_vmrs();
+  DBG("restoring VMR mapping...");
   restore_vmr_map();
 }
