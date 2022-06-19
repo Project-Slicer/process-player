@@ -4,7 +4,7 @@ CUR_DIR := $(shell pwd)
 # Flags
 CFLAGS := -I$(SRC_DIR) -DPP_POST -fPIC
 ASFLAGS := $(CFLAGS)
-LDFLAGS := -nostartfiles -static -fPIC -flto
+LDFLAGS := -nostdlib -nostdinc -nostartfiles -static -fPIC -flto
 
 # Files
 SRCS := $(call scan_src, $(CUR_DIR))
