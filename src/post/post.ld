@@ -27,4 +27,13 @@ SECTIONS
   . = ALIGN(4);
   _bss_end = .;
   kfd_list = .;
+
+  /DISCARD/ : {
+    *(.debug*)
+    *(.comment)
+  }
+  .got : {
+    *(.got)
+    *(.got*)
+  }
 }
