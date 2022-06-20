@@ -75,8 +75,10 @@ static int check_syscall(int strace_fd, pid_t child,
     return 1;
   } else {
     DBG("strace:");
-    DBG("  actual   num = %d, pc = %p", (int)regs->a7, regs->pc - 4);
-    DBG("  expected num = %d, pc = %p", (int)strace.args[6], strace.epc);
+    DBG("\tactual   num = %d, pc = %p, a0 = %d", (int)regs->a7, regs->pc - 4,
+        (int)regs->a0);
+    DBG("\texpected num = %d, pc = %p, a0 = %d", (int)strace.args[6],
+        strace.epc, (int)strace.args[0]);
     if (!fuzzy_check_strace) {
       if (strace.args[0] != regs->a0) return 1;
       if (strace.args[1] != regs->a1) return 1;
@@ -176,6 +178,11 @@ int trace_syscall(pid_t child) {
       restore_trapframe(child, &regs);
       ASSERT(!ptrace(PTRACE_SETREGSET, child, NT_PRSTATUS, &iov));
       DBG("process started");
+    } else {
+#ifndef NDEBUG
+      ASSERT(!ptrace(PTRACE_GETREGSET, child, NT_PRSTATUS, &iov));
+      DBG("\treturned %p", regs.a0);
+#endif
     }
   }
 
