@@ -75,10 +75,16 @@ static int check_syscall(int strace_fd, pid_t child,
     return 1;
   } else {
     DBG("strace:");
-    DBG("\tactual   num = %d, pc = %p, a0 = %d", (int)regs->a7, regs->pc - 4,
-        (int)regs->a0);
-    DBG("\texpected num = %d, pc = %p, a0 = %d", (int)strace.args[6],
-        strace.epc, (int)strace.args[0]);
+    DBG("\tactual   num = %d, pc = %p, a0 = %d, a1 = %d, a2 = %d, a3 = %d, a4 "
+        "= %d, a5 = %d",
+        (int)regs->a7, regs->pc - 4, (int)regs->a0, (int)regs->a1,
+        (int)regs->a2, (int)regs->a3, (int)regs->a4, (int)regs->a5);
+    DBG("\texpected num = %d, pc = %p, a0 = %d, a1 = %d, a2 = %d, a3 = %d, a4 "
+        "= %d, a5 = %d",
+        (int)strace.args[6], strace.epc, (int)strace.args[0],
+        (int)strace.args[1], (int)strace.args[2], (int)strace.args[3],
+        (int)strace.args[4], (int)strace.args[5]);
+    DBG("\tra = %p", regs->ra);
     if (!fuzzy_check_strace) {
       if (strace.args[0] != regs->a0) return 1;
       if (strace.args[1] != regs->a1) return 1;

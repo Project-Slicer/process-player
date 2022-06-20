@@ -64,6 +64,7 @@ static int open_kfd(int kfd) {
     kfd = openat_dir(kfd_path, data.flags);
     PANIC_IF(kfd < 0, "failed to open kfd %s", kfd_path);
     lseek(kfd, data.offset, SEEK_SET);
+    DBG("opened kfd %d at %s", kfd, kfd_path);
   }
   return kfd;
 }
@@ -71,11 +72,15 @@ static int open_kfd(int kfd) {
 static void restore_fd(file_t *file, int fd) {
   if (file->fd >= 0) {
     ASSERT(dup2(file->fd, fd) == fd);
+    DBG("dup2 %d -> %d", file->fd, fd);
   } else {
     int kfd = open_kfd(file->kfd);
     if (kfd != fd) {
       ASSERT(dup2(kfd, fd) == fd);
       close_assert(kfd);
+      DBG("dup2 %d -> %d", kfd, fd);
+    } else {
+      DBG("dup2 %d -> %d (ignored)", kfd, fd);
     }
     file->fd = fd;
   }
