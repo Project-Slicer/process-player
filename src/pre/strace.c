@@ -63,7 +63,7 @@ static void print_cycle_info() {
   uint64_t time = rdtime64() - last_time;
   uint64_t cycle = rdcycle64() - last_cycle;
   uint64_t instret = rdinstret64() - last_instret;
-  log_error("user: %llu ticks, %llu cycles, %llu instructions\n", time, cycle,
+  log_error("total: %llu ticks, %llu cycles, %llu instructions\n", time, cycle,
             instret);
   log_error("sys: %llu ticks, %llu cycles, %llu instructions\n", sys_time,
             sys_cycle, sys_instret);
