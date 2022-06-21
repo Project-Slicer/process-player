@@ -87,7 +87,7 @@ static void wait_for_syscall(pid_t child) {
 }
 
 static void wait_for_syscall_exit(pid_t child) {
-  uint64_t last_sys_time, last_sys_cycle, last_sys_instret;
+  uint64_t last_sys_time = 0, last_sys_cycle = 0, last_sys_instret = 0;
   if (print_cycles == 2) {
     last_sys_time = rdtime64();
     last_sys_cycle = rdcycle64();
