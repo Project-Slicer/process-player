@@ -27,6 +27,7 @@ static void help(const char *progname) {
   printf("Usage: %s [OPTIONS] <CHECKPOINT_DIR>\n", progname);
   printf("Options:\n");
   printf("  -h, --help        Show this help message\n");
+  printf("  -s                Print cycles upon termination\n");
   printf("  --fuzzy-strace    Fuzzy check system call trace\n");
 }
 
@@ -34,14 +35,18 @@ static void parse_args(int argc, const char *argv[]) {
   if (argc < 2) {
     help(argv[0]);
     exit(1);
-  } else if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
-    help(argv[0]);
-    exit(0);
-  } else if (strcmp(argv[1], "--fuzzy-strace") == 0) {
-    fuzzy_check_strace = 1;
-    checkpoint_dir = argv[2];
-  } else {
-    checkpoint_dir = argv[1];
+  }
+  for (int i = 1; i < argc; i++) {
+    if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
+      help(argv[0]);
+      exit(0);
+    } else if (!strcmp(argv[i], "-s")) {
+      print_cycles = 1;
+    } else if (!strcmp(argv[i], "--fuzzy-strace")) {
+      fuzzy_check_strace = 1;
+    } else {
+      checkpoint_dir = argv[i];
+    }
   }
 }
 
