@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <sys/ptrace.h>
 #include <sys/uio.h>
@@ -11,6 +12,7 @@
 #include <unistd.h>
 
 #include "shared/dump.h"
+#include "shared/riscv.h"
 #include "shared/syscall.h"
 #include "shared/utils.h"
 
@@ -50,6 +52,22 @@ struct user_regs_struct {
 };
 
 int fuzzy_check_strace;  // set by --fuzzy-strace flag
+int print_cycles;        // set by -s flag
+int no_syscall_cycles;   // set by --no-sys-cycle flag
+
+static uint64_t last_time, last_cycle, last_instret;
+static uint64_t sys_time, sys_cycle, sys_instret;
+
+static void print_cycle_info() {
+  if (!print_cycles) return;
+  uint64_t time = rdtime64() - last_time;
+  uint64_t cycle = rdcycle64() - last_cycle;
+  uint64_t instret = rdinstret64() - last_instret;
+  log_error("user: %llu ticks, %llu cycles, %llu instructions\n", time, cycle,
+            instret);
+  log_error("sys: %llu ticks, %llu cycles, %llu instructions\n", sys_time,
+            sys_cycle, sys_instret);
+}
 
 static void wait_for_syscall(pid_t child) {
   int status;
@@ -58,9 +76,28 @@ static void wait_for_syscall(pid_t child) {
     ASSERT(waitpid(child, &status, 0) == child);
     if (LIKELY(WIFSTOPPED(status))) {
       if (LIKELY(WSTOPSIG(status) & 0x80)) return;
+      print_cycle_info();
       raise(WSTOPSIG(status));
     }
-    if (UNLIKELY(WIFEXITED(status))) exit(WEXITSTATUS(status));
+    if (UNLIKELY(WIFEXITED(status))) {
+      print_cycle_info();
+      exit(WEXITSTATUS(status));
+    }
+  }
+}
+
+static void wait_for_syscall_exit(pid_t child) {
+  uint64_t last_sys_time, last_sys_cycle, last_sys_instret;
+  if (print_cycles == 2) {
+    last_sys_time = rdtime64();
+    last_sys_cycle = rdcycle64();
+    last_sys_instret = rdinstret64();
+  }
+  wait_for_syscall(child);
+  if (print_cycles == 2) {
+    sys_time += rdtime64() - last_sys_time;
+    sys_cycle += rdcycle64() - last_sys_cycle;
+    sys_instret += rdinstret64() - last_sys_instret;
   }
 }
 
@@ -70,6 +107,7 @@ static int check_syscall(int strace_fd, pid_t child,
   ssize_t len = read(strace_fd, &strace, sizeof(strace));
   if (len == 0) {
     kill(child, SIGKILL);
+    print_cycle_info();
     exit(0);
   } else if (len != sizeof(strace)) {
     return 1;
@@ -177,13 +215,19 @@ int trace_syscall(pid_t child) {
     }
 
     // wait for the child to exit the system call
-    wait_for_syscall(child);
+    wait_for_syscall_exit(child);
 
     // handle system call `pp_start`
     if (UNLIKELY(regs.a7 == SYS_PP_START)) {
       restore_trapframe(child, &regs);
       ASSERT(!ptrace(PTRACE_SETREGSET, child, NT_PRSTATUS, &iov));
       DBG("process started");
+      if (print_cycles) {
+        last_time = rdtime64();
+        last_cycle = rdcycle64();
+        last_instret = rdinstret();
+        print_cycles = 2;
+      }
     } else {
 #ifndef NDEBUG
       ASSERT(!ptrace(PTRACE_GETREGSET, child, NT_PRSTATUS, &iov));

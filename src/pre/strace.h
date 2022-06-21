@@ -4,6 +4,7 @@
 #include <sys/types.h>
 
 extern int fuzzy_check_strace;
+extern int print_cycles;
 
 // Traces the syscall of the given pid.
 // Returns the exit code of the process.
